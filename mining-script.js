@@ -239,6 +239,13 @@ class CryptoMiner {
         }
     }
 
+    async fetchFromBinance() {
+        // Method 2: Binance API
+        const response = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+        const data = await response.json();
+        return parseFloat(data.price);
+    }
+
     updateDisplay() {
         // Update balance
         document.getElementById('totalBalance').textContent = `${this.balance.toFixed(8)} BTC`;
@@ -255,7 +262,7 @@ class CryptoMiner {
         document.getElementById('dailyEarnings').textContent = `${dailyEstimate.toFixed(8)} BTC`;
         
         // Update USD value (simulated)
-        const btcPrice = 45000; // Simulated BTC price
+        const btcPrice = fetchFromBinance(); // Simulated BTC price
         const usdValue = this.balance * btcPrice;
         document.querySelector('#totalBalance + div').textContent = `≈ $${usdValue.toFixed(2)} USD`;
     }
