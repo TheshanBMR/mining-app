@@ -262,7 +262,7 @@ class CryptoMiner {
         document.getElementById('dailyEarnings').textContent = `${dailyEstimate.toFixed(8)} BTC`;
         
         // Update USD value (simulated)
-        const btcPrice = fetchFromBinance(); // Simulated BTC price
+        const btcPrice = fetchFromBinance.toLocaleString(); // Simulated BTC price
         const usdValue = this.balance * btcPrice;
         document.querySelector('#totalBalance + div').textContent = `≈ $${usdValue.toFixed(2)} USD`;
     }
