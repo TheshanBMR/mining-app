@@ -6,13 +6,69 @@ class CryptoMiner {
         this.activeMiners = 0;
         this.miningInterval = null;
         this.rewardInterval = null;
-        this.nextRewardTime = 30; // 1 minutes in seconds
+        this.nextRewardTime = 30; // 30 seconds in seconds
         this.transactions = this.loadTransactions();
+        this.btc = 45000;
         
         this.initializeEventListeners();
         this.updateDisplay();
         this.loadTransactionHistory();
         this.startRealTimeUpdates();
+        this.fetchBitcoinPrice();
+    }
+
+    async fetchBitcoinPrice() {
+        try {
+            const price = await this.getBitcoinPrice();
+            if (price && price > 0) {
+                this.btc = price;
+                this.updateDisplay();
+                console.log('Bitcoin price updated:', price);
+            }
+        } catch (error) {
+            console.error('Failed to fetch Bitcoin price:', error);
+            this.useFallbackPrice();
+        }
+    }
+
+    async getBitcoinPrice() {
+        // Try multiple APIs for reliability
+        const APIs = [
+            this.fetchFromBinance()
+        ];
+
+        for (const apiCall of APIs) {
+            try {
+                const price = await apiCall;
+                if (price && price > 0) {
+                    return price;
+                }
+            } catch (error) {
+                console.warn('API failed, trying next...');
+            }
+        }
+        
+        throw new Error('All APIs failed');
+    }
+
+    async fetchFromBinance() {
+        try {
+            const response = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            return parseFloat(data.price);
+        } catch (error) {
+            console.error('Binance API failed:', error);
+            throw error;
+        }
+    }
+
+    useFallbackPrice() {
+        console.log('Using fallback Bitcoin price');
+        this.btc = 45000; // Default value
+        this.updateDisplay();
     }
 
     // LocalStorage Methods
@@ -47,12 +103,21 @@ class CryptoMiner {
     }
 
     initializeEventListeners() {
-        const miningButton = document.getElementById('miningButton');
-        miningButton.addEventListener('click', () => this.toggleMining());
+        try {
+            const miningButton = document.getElementById('miningButton');
+            if (!miningButton) {
+                throw new Error('Mining button not found');
+            }
+            miningButton.addEventListener('click', () => this.toggleMining());
+        } catch (error) {
+            console.error('Failed to initialize event listeners:', error);
+        }
     }
 
     toggleMining() {
         const button = document.getElementById('miningButton');
+        if (!button) return;
+
         const buttonText = button.querySelector('.btn-text');
         const loading = button.querySelector('.loading');
 
@@ -60,8 +125,8 @@ class CryptoMiner {
             // Start mining
             this.isMining = true;
             button.classList.add('stop');
-            buttonText.textContent = 'Stop Mining';
-            loading.style.display = 'inline-block';
+            if (buttonText) buttonText.textContent = 'Stop Mining';
+            if (loading) loading.style.display = 'inline-block';
             
             this.startMining();
             this.addTransaction('Mining Started', 0, 'info');
@@ -69,8 +134,8 @@ class CryptoMiner {
             // Stop mining
             this.isMining = false;
             button.classList.remove('stop');
-            buttonText.textContent = 'Start Mining';
-            loading.style.display = 'none';
+            if (buttonText) buttonText.textContent = 'Start Mining';
+            if (loading) loading.style.display = 'none';
             
             this.stopMining();
             this.addTransaction('Mining Stopped', 0, 'info');
@@ -103,9 +168,11 @@ class CryptoMiner {
         
         if (this.miningInterval) {
             clearInterval(this.miningInterval);
+            this.miningInterval = null;
         }
         if (this.rewardInterval) {
             clearInterval(this.rewardInterval);
+            this.rewardInterval = null;
         }
         
         this.updateDisplay();
@@ -170,15 +237,26 @@ class CryptoMiner {
         const secs = seconds % 60;
         
         const countdownText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        document.getElementById('nextReward').textContent = countdownText;
+        const nextRewardElement = document.getElementById('nextReward');
+        if (nextRewardElement) {
+            nextRewardElement.textContent = countdownText;
+        }
     }
 
     updateProgress(secondsLeft) {
         const progress = ((this.nextRewardTime - secondsLeft) / this.nextRewardTime) * 100;
-        document.getElementById('miningProgress').style.width = `${progress}%`;
+        const progressElement = document.getElementById('miningProgress');
+        if (progressElement) {
+            progressElement.style.width = `${progress}%`;
+        }
     }
 
     addTransaction(description, amount, type = 'reward') {
+        if (typeof amount !== 'number' || !isFinite(amount)) {
+            console.error('Invalid transaction amount:', amount);
+            return;
+        }
+        
         const transaction = {
             id: this.generateId(),
             description: description,
@@ -200,6 +278,8 @@ class CryptoMiner {
 
     loadTransactionHistory() {
         const transactionList = document.getElementById('transactionList');
+        if (!transactionList) return;
+        
         transactionList.innerHTML = '';
         
         // Display only the last 10 transactions
@@ -241,23 +321,42 @@ class CryptoMiner {
 
     updateDisplay() {
         // Update balance
-        document.getElementById('totalBalance').textContent = `${this.balance.toFixed(8)} BTC`;
+        const totalBalanceElement = document.getElementById('totalBalance');
+        if (totalBalanceElement) {
+            totalBalanceElement.textContent = `${this.balance.toFixed(8)} BTC`;
+        }
         
         // Update hash rate
-        document.getElementById('hashRate').textContent = `${this.hashRate} H/s`;
-        document.getElementById('currentHashRate').textContent = `${this.hashRate} H/s`;
+        const hashRateElement = document.getElementById('hashRate');
+        if (hashRateElement) {
+            hashRateElement.textContent = `${this.hashRate} H/s`;
+        }
+        
+        const currentHashRateElement = document.getElementById('currentHashRate');
+        if (currentHashRateElement) {
+            currentHashRateElement.textContent = `${this.hashRate} H/s`;
+        }
         
         // Update active miners
-        document.getElementById('activeMiners').textContent = this.activeMiners;
+        const activeMinersElement = document.getElementById('activeMiners');
+        if (activeMinersElement) {
+            activeMinersElement.textContent = this.activeMiners;
+        }
         
         // Update daily earnings (estimate)
         const dailyEstimate = this.hashRate * 0.00000001;
-        document.getElementById('dailyEarnings').textContent = `${dailyEstimate.toFixed(8)} BTC`;
+        const dailyEarningsElement = document.getElementById('dailyEarnings');
+        if (dailyEarningsElement) {
+            dailyEarningsElement.textContent = `${dailyEstimate.toFixed(8)} BTC`;
+        }
         
-        // Update USD value (simulated)
-        const btcPrice = 45000; // Simulated BTC price
+        // Update USD value
+        const btcPrice = this.btc;
         const usdValue = this.balance * btcPrice;
-        document.querySelector('#totalBalance + div').textContent = `≈ $${usdValue.toFixed(2)} USD`;
+        const usdValueElement = document.querySelector('#totalBalance + div');
+        if (usdValueElement) {
+            usdValueElement.textContent = `≈ $${usdValue.toFixed(2)} USD`;
+        }
     }
 
     startRealTimeUpdates() {
