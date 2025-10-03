@@ -6,13 +6,56 @@ class CryptoMiner {
         this.activeMiners = 0;
         this.miningInterval = null;
         this.rewardInterval = null;
-        this.nextRewardTime = 60; // 1 minutes in seconds
+        this.nextRewardTime = 30; // 1 minutes in seconds
         this.transactions = this.loadTransactions();
+        this.btc = 45000;
         
         this.initializeEventListeners();
         this.updateDisplay();
         this.loadTransactionHistory();
         this.startRealTimeUpdates();
+        this.fetchBitcoinPrice();
+    }
+
+    async fetchBitcoinPrice() {
+        try {
+            const price = await this.getBitcoinPrice();
+            if (price && price > 0) {
+                this.btcPrice = price;
+                this.updateDisplay();
+                console.log(price);
+            }
+        } catch (error) {
+            console.error(error);
+            this.useFallbackPrice();
+        }
+    }
+
+    async getBitcoinPrice() {
+        // Try multiple APIs for reliability
+        const APIs = [
+            this.fetchFromBinance()
+        ];
+
+        for (const apiCall of APIs) {
+            try {
+                const price = await apiCall;
+                if (price && price > 0) {
+                    return price;
+                }
+            } catch (error) {
+                console.warn('API failed, trying next...');
+            }
+        }
+        
+        throw new Error('All APIs failed');
+    }
+
+    async fetchFromBinance() {
+        // Method 2: Binance API
+        const response = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+        const data = await response.json();
+        return parseFloat(data.price);
     }
 
     // LocalStorage Methods
@@ -239,13 +282,6 @@ class CryptoMiner {
         }
     }
 
-    fetchFromBinance() {
-        // Method 2: Binance API
-        const response = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
-        const data = await response.json();
-        return parseFloat(data.price);
-    }
-
     updateDisplay() {
         // Update balance
         document.getElementById('totalBalance').textContent = `${this.balance.toFixed(8)} BTC`;
@@ -262,7 +298,7 @@ class CryptoMiner {
         document.getElementById('dailyEarnings').textContent = `${dailyEstimate.toFixed(8)} BTC`;
         
         // Update USD value (simulated)
-        const btcPrice = fetchFromBinance.toLocaleString(); // Simulated BTC price
+        const btcPrice = this.btc.toLocaleString(); // Simulated BTC price
         const usdValue = this.balance * btcPrice;
         document.querySelector('#totalBalance + div').textContent = `≈ $${usdValue.toFixed(2)} USD`;
     }
