@@ -8,54 +8,11 @@ class CryptoMiner {
         this.rewardInterval = null;
         this.nextRewardTime = 30; // 1 minutes in seconds
         this.transactions = this.loadTransactions();
-        this.btc = 45000;
         
         this.initializeEventListeners();
         this.updateDisplay();
         this.loadTransactionHistory();
         this.startRealTimeUpdates();
-        this.fetchBitcoinPrice();
-    }
-
-    fetchBitcoinPrice() {
-        try {
-            const price = await this.getBitcoinPrice();
-            if (price && price > 0) {
-                this.btc = price;
-                this.updateDisplay();
-                console.log(price);
-            }
-        } catch (error) {
-            console.error(error);
-            this.useFallbackPrice();
-        }
-    }
-
-    getBitcoinPrice() {
-        // Try multiple APIs for reliability
-        const APIs = [
-            this.fetchFromBinance()
-        ];
-
-        for (const apiCall of APIs) {
-            try {
-                const price = await apiCall;
-                if (price && price > 0) {
-                    return price;
-                }
-            } catch (error) {
-                console.warn('API failed, trying next...');
-            }
-        }
-        
-        throw new Error('All APIs failed');
-    }
-
-    fetchFromBinance() {
-        // Method 2: Binance API
-        const response = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
-        const data = await response.json();
-        return parseFloat(data.price);
     }
 
     // LocalStorage Methods
@@ -298,7 +255,7 @@ class CryptoMiner {
         document.getElementById('dailyEarnings').textContent = `${dailyEstimate.toFixed(8)} BTC`;
         
         // Update USD value (simulated)
-        const btcPrice = this.btc; // Simulated BTC price
+        const btcPrice = 45000; // Simulated BTC price
         const usdValue = this.balance * btcPrice;
         document.querySelector('#totalBalance + div').textContent = `≈ $${usdValue.toFixed(2)} USD`;
     }
