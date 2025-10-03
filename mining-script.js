@@ -239,7 +239,7 @@ class CryptoMiner {
         }
     }
 
-    async fetchFromBinance() {
+    fetchFromBinance() {
         // Method 2: Binance API
         const response = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
         const data = await response.json();
