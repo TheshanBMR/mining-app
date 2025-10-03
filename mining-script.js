@@ -17,7 +17,7 @@ class CryptoMiner {
         this.fetchBitcoinPrice();
     }
 
-    async fetchBitcoinPrice() {
+    fetchBitcoinPrice() {
         try {
             const price = await this.getBitcoinPrice();
             if (price && price > 0) {
@@ -31,7 +31,7 @@ class CryptoMiner {
         }
     }
 
-    async getBitcoinPrice() {
+    getBitcoinPrice() {
         // Try multiple APIs for reliability
         const APIs = [
             this.fetchFromBinance()
@@ -51,7 +51,7 @@ class CryptoMiner {
         throw new Error('All APIs failed');
     }
 
-    async fetchFromBinance() {
+    fetchFromBinance() {
         // Method 2: Binance API
         const response = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
         const data = await response.json();
