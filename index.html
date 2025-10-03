@@ -141,6 +141,10 @@
             color: #4CAF50;
         }
 
+        .negative {
+            color: #f44336;
+        }
+
         .loading {
             display: inline-block;
             width: 20px;
@@ -149,6 +153,21 @@
             border-radius: 50%;
             border-top-color: #fff;
             animation: spin 1s ease-in-out infinite;
+        }
+
+        .clear-data {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .clear-data:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         @keyframes spin {
@@ -205,12 +224,12 @@
         </div>
 
         <div class="transactions">
-            <h3>Recent Transactions</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Recent Transactions</h3>
+                <button class="clear-data" onclick="app.clearAllData()">Clear All Data</button>
+            </div>
             <div class="transaction-list" id="transactionList">
-                <div class="transaction-item">
-                    <span>Welcome Bonus</span>
-                    <span class="positive">+0.00000100 BTC</span>
-                </div>
+                <!-- Transactions will be loaded here -->
             </div>
         </div>
     </div>
