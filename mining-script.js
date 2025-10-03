@@ -1,16 +1,49 @@
 class CryptoMiner {
     constructor() {
         this.isMining = false;
-        this.balance = 0.00000100; // Starting bonus
+        this.balance = this.loadBalance();
         this.hashRate = 0;
         this.activeMiners = 0;
         this.miningInterval = null;
         this.rewardInterval = null;
-        this.nextRewardTime = 300; // 5 minutes in seconds
+        this.nextRewardTime = 60; // 1 minutes in seconds
+        this.transactions = this.loadTransactions();
         
         this.initializeEventListeners();
         this.updateDisplay();
+        this.loadTransactionHistory();
         this.startRealTimeUpdates();
+    }
+
+    // LocalStorage Methods
+    loadBalance() {
+        const savedBalance = localStorage.getItem('cryptoMiner_balance');
+        return savedBalance ? parseFloat(savedBalance) : 0.00000100; // Default starting bonus
+    }
+
+    saveBalance() {
+        localStorage.setItem('cryptoMiner_balance', this.balance.toString());
+    }
+
+    loadTransactions() {
+        const savedTransactions = localStorage.getItem('cryptoMiner_transactions');
+        return savedTransactions ? JSON.parse(savedTransactions) : [
+            {
+                id: this.generateId(),
+                description: 'Welcome Bonus',
+                amount: 0.00000100,
+                timestamp: new Date().toISOString(),
+                type: 'bonus'
+            }
+        ];
+    }
+
+    saveTransactions() {
+        localStorage.setItem('cryptoMiner_transactions', JSON.stringify(this.transactions));
+    }
+
+    generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 
     initializeEventListeners() {
@@ -31,7 +64,7 @@ class CryptoMiner {
             loading.style.display = 'inline-block';
             
             this.startMining();
-            this.addTransaction('Mining Started', 0);
+            this.addTransaction('Mining Started', 0, 'info');
         } else {
             // Stop mining
             this.isMining = false;
@@ -40,7 +73,7 @@ class CryptoMiner {
             loading.style.display = 'none';
             
             this.stopMining();
-            this.addTransaction('Mining Stopped', 0);
+            this.addTransaction('Mining Stopped', 0, 'info');
         }
     }
 
@@ -89,7 +122,8 @@ class CryptoMiner {
         if (rewardChance < 0.01) { // 1% chance per second to find a block
             const reward = this.calculateReward();
             this.balance += reward;
-            this.addTransaction('Block Mined', reward);
+            this.addTransaction('Block Mined', reward, 'reward');
+            this.saveBalance();
             this.updateDisplay();
         }
     }
@@ -125,7 +159,8 @@ class CryptoMiner {
     generateGuaranteedReward() {
         const reward = 0.00000100; // Guaranteed reward
         this.balance += reward;
-        this.addTransaction('Guaranteed Reward', reward);
+        this.addTransaction('Guaranteed Reward', reward, 'guaranteed');
+        this.saveBalance();
         this.updateDisplay();
     }
 
@@ -143,24 +178,64 @@ class CryptoMiner {
         document.getElementById('miningProgress').style.width = `${progress}%`;
     }
 
-    addTransaction(description, amount) {
+    addTransaction(description, amount, type = 'reward') {
+        const transaction = {
+            id: this.generateId(),
+            description: description,
+            amount: amount,
+            timestamp: new Date().toISOString(),
+            type: type
+        };
+        
+        this.transactions.unshift(transaction);
+        
+        // Keep only last 50 transactions to prevent storage overload
+        if (this.transactions.length > 50) {
+            this.transactions = this.transactions.slice(0, 50);
+        }
+        
+        this.saveTransactions();
+        this.loadTransactionHistory();
+    }
+
+    loadTransactionHistory() {
         const transactionList = document.getElementById('transactionList');
-        const transactionItem = document.createElement('div');
-        transactionItem.className = 'transaction-item';
+        transactionList.innerHTML = '';
         
-        const amountClass = amount > 0 ? 'positive' : '';
-        const amountText = amount > 0 ? `+${amount.toFixed(8)} BTC` : `${amount.toFixed(8)} BTC`;
+        // Display only the last 10 transactions
+        const recentTransactions = this.transactions.slice(0, 10);
         
-        transactionItem.innerHTML = `
-            <span>${description}</span>
-            <span class="${amountClass}">${amountText}</span>
-        `;
+        recentTransactions.forEach(transaction => {
+            const transactionItem = document.createElement('div');
+            transactionItem.className = 'transaction-item';
+            
+            const amountClass = transaction.amount > 0 ? 'positive' : 
+                              transaction.amount < 0 ? 'negative' : '';
+            
+            const amountText = transaction.amount > 0 ? 
+                `+${transaction.amount.toFixed(8)} BTC` : 
+                transaction.amount < 0 ? 
+                `${transaction.amount.toFixed(8)} BTC` : 
+                '—';
+            
+            // Format timestamp
+            const date = new Date(transaction.timestamp);
+            const timeString = date.toLocaleTimeString();
+            
+            transactionItem.innerHTML = `
+                <div>
+                    <div>${transaction.description}</div>
+                    <div style="font-size: 0.8em; opacity: 0.7;">${timeString}</div>
+                </div>
+                <span class="${amountClass}">${amountText}</span>
+            `;
+            
+            transactionList.appendChild(transactionItem);
+        });
         
-        transactionList.insertBefore(transactionItem, transactionList.firstChild);
-        
-        // Keep only last 10 transactions
-        if (transactionList.children.length > 10) {
-            transactionList.removeChild(transactionList.lastChild);
+        // Show message if no transactions
+        if (this.transactions.length === 0) {
+            transactionList.innerHTML = '<div class="transaction-item" style="text-align: center; opacity: 0.7;">No transactions yet</div>';
         }
     }
 
@@ -192,39 +267,70 @@ class CryptoMiner {
                 // Small random fluctuations in displayed values
                 const fluctuation = (Math.random() - 0.5) * 0.00000001;
                 this.balance += fluctuation;
+                this.saveBalance();
                 this.updateDisplay();
             }
         }, 5000);
     }
+
+    // Method to clear all data (for testing/reset)
+    clearAllData() {
+        if (confirm('Are you sure you want to clear all data? This will reset your balance and transaction history.')) {
+            localStorage.removeItem('cryptoMiner_balance');
+            localStorage.removeItem('cryptoMiner_transactions');
+            
+            // Reset to initial state
+            this.balance = 0.00000100;
+            this.transactions = [{
+                id: this.generateId(),
+                description: 'Welcome Bonus',
+                amount: 0.00000100,
+                timestamp: new Date().toISOString(),
+                type: 'bonus'
+            }];
+            
+            this.stopMining();
+            this.saveBalance();
+            this.saveTransactions();
+            this.loadTransactionHistory();
+            this.updateDisplay();
+            
+            alert('All data has been cleared. Welcome bonus restored.');
+        }
+    }
+
+    // Export data functionality (optional)
+    exportData() {
+        const data = {
+            balance: this.balance,
+            transactions: this.transactions,
+            exportDate: new Date().toISOString()
+        };
+        
+        const dataStr = JSON.stringify(data, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `cryptominer-data-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+    }
 }
 
 // Initialize the mining app when page loads
+let app;
 document.addEventListener('DOMContentLoaded', () => {
-    new CryptoMiner();
+    app = new CryptoMiner();
 });
 
-// Add some realistic browser mining simulation (completely client-side, no actual mining)
-function simulateBrowserMining() {
-    if (typeof Worker !== 'undefined') {
-        const worker = new Worker(URL.createObjectURL(new Blob([`
-            let count = 0;
-            setInterval(() => {
-                // Simulate computational work
-                for (let i = 0; i < 1000000; i++) {
-                    count += Math.sqrt(i) * Math.random();
-                }
-                postMessage({ count: count });
-            }, 1000);
-        `], { type: 'application/javascript' })));
-        
-        worker.onmessage = function(e) {
-            console.log('Mining simulation running...', e.data);
-        };
-        
-        return worker;
-    }
-    return null;
-}
+// Make app globally available for the clear button
+window.app = app;
 
-// Optional: Start browser mining simulation (very light, for demonstration only)
-// const miningWorker = simulateBrowserMining();
+// Optional: Add beforeunload event to save state when user leaves
+window.addEventListener('beforeunload', () => {
+    if (app && app.isMining) {
+        app.addTransaction('Mining Session Ended', 0, 'info');
+        app.saveBalance();
+        app.saveTransactions();
+    }
+});
