@@ -21,7 +21,7 @@ class CryptoMiner {
         try {
             const price = await this.getBitcoinPrice();
             if (price && price > 0) {
-                this.btcPrice = price;
+                this.btc = price;
                 this.updateDisplay();
                 console.log(price);
             }
