@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoMiner Pro - Cloud Mining</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ffd89b, #19547b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 10px 0;
+        }
+
+        .mining-controls {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .mining-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .mining-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .mining-btn.stop {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+        }
+
+        .hashrate-display {
+            font-size: 1.5em;
+            margin: 20px 0;
+            color: #ffd700;
+        }
+
+        .progress-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .transactions {
+            margin-top: 30px;
+        }
+
+        .transaction-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .transaction-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .positive {
+            color: #4CAF50;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 CryptoMiner Pro</h1>
+            <p>Cloud Mining Platform - Start Earning Crypto Today!</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div>Total Balance</div>
+                <div class="stat-value" id="totalBalance">0.00000000 BTC</div>
+                <div>≈ $0.00 USD</div>
+            </div>
+            <div class="stat-card">
+                <div>Hash Rate</div>
+                <div class="stat-value" id="hashRate">0 H/s</div>
+                <div>Mining Power</div>
+            </div>
+            <div class="stat-card">
+                <div>Active Miners</div>
+                <div class="stat-value" id="activeMiners">0</div>
+                <div>Online Workers</div>
+            </div>
+            <div class="stat-card">
+                <div>Daily Earnings</div>
+                <div class="stat-value" id="dailyEarnings">0.00000000 BTC</div>
+                <div>Estimated</div>
+            </div>
+        </div>
+
+        <div class="mining-controls">
+            <div class="hashrate-display">
+                Current Hash Rate: <span id="currentHashRate">0 H/s</span>
+            </div>
+            <button class="mining-btn" id="miningButton">
+                <span class="btn-text">Start Mining</span>
+                <span class="loading" style="display: none;"></span>
+            </button>
+        </div>
+
+        <div class="progress-container">
+            <div>Mining Progress</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="miningProgress"></div>
+            </div>
+            <div>Next Reward in: <span id="nextReward">00:00:00</span></div>
+        </div>
+
+        <div class="transactions">
+            <h3>Recent Transactions</h3>
+            <div class="transaction-list" id="transactionList">
+                <div class="transaction-item">
+                    <span>Welcome Bonus</span>
+                    <span class="positive">+0.00000100 BTC</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="mining-script.js"></script>
+</body>
+</html>
